@@ -20,6 +20,7 @@ headers = {
     'sec-ch-ua-platform': '"macOS"',
 }
 
+max_take = 1000
 json_data = {
     'sortByEnum': 'Date',
     'sortByAsc': False,
@@ -30,32 +31,43 @@ json_data = {
     'take': 1000,
 }
 
-response = requests.post(
-    'https://politiloggen-vis-frontend.bks-prod.politiet.no/api/messagethread',
-    headers=headers,
-    json=json_data,
-)
+fields = ['parent_id', 'district', 'districtId', 'category', 'municipality', 'message_id', 'text', 'createdOn',
+          'updatedOn']
 
-list_dict = []
-fields = ['parent_id', 'district', 'districtId', 'category', 'municipality', 'message_id', 'text', 'createdOn', 'updatedOn']
-if 'messageThreads' not in response.json():
-    print("aaa")
-for line in response.json()['messageThreads']:
-    for msg in line['messages']:
-        list_dict.append({
-            fields[0]: line['id'],
-            fields[1]: line[fields[1]],
-            fields[2]: line[fields[2]],
-            fields[3]: line[fields[3]],
-            fields[4]: line[fields[4]],
-            fields[5]: msg['id'],
-            fields[6]: msg[fields[6]],
-            fields[7]: msg[fields[7]],
-        })
 
-with open("output.csv", 'w') as file:
+def fetch_data():
+    list_dict = []
+    while True:
+        response = requests.post('https://politiloggen-vis-frontend.bks-prod.politiet.no/api/messagethread',
+                                 headers=headers, json=json_data, )
+
+        if len(response.json()['messageThreads']) < max_take:
+            print("ok")
+            len(response.json()['messageThreads'])
+            break
+
+        if 'messageThreads' not in response.json():
+            print("aaa")
+        for line in response.json()['messageThreads']:
+            for msg in line['messages']:
+                list_dict.append({
+                    fields[0]: line['id'],
+                    fields[1]: line[fields[1]],
+                    fields[2]: line[fields[2]],
+                    fields[3]: line[fields[3]],
+                    fields[4]: line[fields[4]],
+                    fields[5]: msg['id'],
+                    fields[6]: msg[fields[6]],
+                    fields[7]: msg[fields[7]],
+                })
+        json_data['skip'] += max_take
+    return list_dict
+
+
+data_dict = fetch_data()
+
+
+with open("output", 'w', newline='', encoding='utf-8-sig') as file:
     writer = csv.DictWriter(file, fieldnames=fields)
     writer.writeheader()
-    writer.writerows(list_dict)
-
-
+    writer.writerows(data_dict)
