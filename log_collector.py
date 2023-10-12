@@ -67,7 +67,7 @@ def fetch_data():
 data_dict = fetch_data()
 
 
-with open("output", 'w', newline='', encoding='utf-8-sig') as file:
+with open("output1.csv", 'w', newline='', encoding='utf-8-sig') as file:
     writer = csv.DictWriter(file, fieldnames=fields)
     writer.writeheader()
     writer.writerows(data_dict)

@@ -1,0 +1,22 @@
+Random thoughts or observations which can be mentioned and discussed in the report
+
+Category distribution:
+- Traffic is clearly the most frequent one
+- Arrangement, skadeverk, sjø, dyr have very few incidents compared to traffic
+- Noticeable imbalance in the categories -> challenging when we start modelling
+- Could we implement any techniques to help with the imbalance, like over/under-sampling? Should read papers on
+how much preprocessing before doing BERT etc.
+
+Hourly distribution
+- Surprising how many messages at nights, it happens less at night, so it makes sense that it is fewer messages at night
+- Peak: 12-14
+- Off-peak: 1-6
+
+Text length dist:
+- Bimodal, observe two peaks
+- Most texts are centered around 100-150 char, and the other peak around 11-150
+
+Text stats
+- Avg length is 146 char
+- Shortest is only 1 character hmm
+- Longest is 280
