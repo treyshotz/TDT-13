@@ -8,15 +8,15 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 # %%
-df = pd.read_csv("output.csv")
+df = pd.read_csv("data/logs_05oct.csv")
 # train = int(len(df) * .8)
 # test = int(len(df) * .2)
 #
 # train_df = df[:train]
 # test_df = df[train:train + test]
-df = df[['text', 'category']]
+df = df[['text', 'label']]
 train_df, test_df = train_test_split(df, test_size=0.20)
-labels = list(df['category'].unique())
+labels = list(df['label'].unique())
 id2label = dict(zip(range(len(labels)), labels))
 label2id = dict(zip(labels, range(len(labels))))
 
@@ -38,10 +38,10 @@ metric = evaluate.load("accuracy")
 
 def preprocess(data):
     text = list(data['text'])
-    category_list = list(data['category'])
+    label_list = list(data['label'])
     ins = tokenizer(text, padding="max_length", truncation=True, max_length=128)
     with tokenizer.as_target_tokenizer():
-        out = tokenizer(category_list, padding="max_length", truncation=True, max_length= 14)
+        out = tokenizer(label_list, padding="max_length", truncation=True)
 
     data["input_ids"] = ins.input_ids
     data["attention_mask"] = ins.attention_mask
@@ -55,7 +55,7 @@ def preprocess(data):
 
 
 # %%
-train_ds = train_ds.map(preprocess, batched=True, remove_columns=['text', 'category', '__index_level_0__'])
+train_ds = train_ds.map(preprocess, batched=True, remove_columns=['text', 'label', '__index_level_0__'])
 train_ds.set_format(columns=["labels", "input_ids", "attention_mask", "decoder_input_ids", "decoder_attention_mask"])
 
 
@@ -81,7 +81,7 @@ class CustomTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 
-trained = CustomTrainer(model=model,
+trained = Trainer(model=model,
                         args=training_args,
                         train_dataset=train_ds,
                         eval_dataset=test_df,
@@ -89,3 +89,5 @@ trained = CustomTrainer(model=model,
 
 # %%
 trained.train()
+
+

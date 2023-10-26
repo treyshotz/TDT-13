@@ -26,7 +26,7 @@ json_data = {
     'sortByAsc': False,
     'timeSpanType': 'Custom',
     'dateTimeFrom': '2022-01-01T00:00:00.000Z',
-    'dateTimeTo': '2023-10-05T09:35:42.123Z',
+    'dateTimeTo': '2023-10-25T10:35:42.123Z',
     'skip': 0,
     'take': 1000,
 }
@@ -67,7 +67,7 @@ def fetch_data():
 data_dict = fetch_data()
 
 
-with open("output1.csv", 'w', newline='', encoding='utf-8-sig') as file:
+with open(f"logs{json_data.get('dateTimeTo')}.csv", 'w', newline='', encoding='utf-8-sig') as file:
     writer = csv.DictWriter(file, fieldnames=fields)
     writer.writeheader()
     writer.writerows(data_dict)

@@ -6,7 +6,7 @@ import seaborn as sns
 #%%
 # Load data
 target = 'category'
-df = pd.read_csv('output.csv')
+df = pd.read_csv('data/logs_05oct.csv')
 df.head(10)
 
 #%%
@@ -92,7 +92,7 @@ plt.ylabel('Number of Texts')
 plt.xticks(ticks=range(len(categories_dict)), labels=categories_dict.keys(), rotation=45)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.savefig('img/distribution_catgoeries.png')
+plt.savefig('img/distribution_categories.png')
 #%%
 # First date and last date in dataset
 earliest = df['createdOn_datetime'].min()
