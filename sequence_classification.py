@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import torch
 from datasets import load_dataset
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from tensorflow.python.ops.numpy_ops import np_config
 from transformers import AutoModelForSequenceClassification, Trainer, AutoTokenizer, TrainingArguments, \
     DataCollatorWithPadding
@@ -20,10 +21,28 @@ to_remove = [
     'createdOn',
     'updatedOn']
 
+# %%
+
+df = pd.read_csv("data/logs_25oct.csv")
+df = df[['text', 'category']]
+labels = list(df['category'].unique())
+id2label = dict(zip(range(len(labels)), labels))
+label2id = dict(zip(labels, range(len(labels))))
+
 
 # %%
 def preprocess_function(examples):
-    return tokenizer(examples["text"], truncation=True)
+    tokenized_text = tokenizer(examples["text"], truncation=True)
+    labels_batch = examples['label']
+    # create numpy array of shape (batch_size, num_labels)
+    labels_matrix = np.zeros((len(tokenized_text.encodings), len(labels)))
+    # fill numpy array
+    for pos, obj in enumerate(labels_batch):
+        labels_matrix[pos, obj] = 1
+
+    tokenized_text["label"] = labels_matrix.tolist()
+
+    return tokenized_text
 
 
 def prepare_dataset():
@@ -36,41 +55,52 @@ def prepare_dataset():
     return train_logdata, test_logdata
 
 
-def compute_metrics(eval_pred):
-    predictions, labels = eval_pred
-    predictions = np.argmax(predictions, axis=1)
-    return accuracy.compute(predictions=predictions, references=labels)
+def compute_metrics(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+    # argmax(pred.predictions, axis=1)
+    # pred.predictions.argmax(-1)
+    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
+    acc = accuracy_score(labels, preds)
+    return {
+        'accuracy': acc,
+        'f1': f1,
+        'precision': precision,
+        'recall': recall
+    }
 
 
 # %%
 
-df = pd.read_csv("data/logs_25oct.csv")
-df = df[['text', 'category']]
-labels = list(df['category'].unique())
-id2label = dict(zip(range(len(labels)), labels))
-label2id = dict(zip(labels, range(len(labels))))
-
-
-# %%
-
-def get_training_args():
+def get_training_args(pre_model):
     return TrainingArguments(
         output_dir="model_run",
         learning_rate=2e-5,
         per_device_train_batch_size=16,
         per_device_eval_batch_size=16,
         do_train=True,
+        warmup_steps=200,
+        fp16=True,
         num_train_epochs=2,
         weight_decay=0.01,
         evaluation_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
         push_to_hub=False,
-        save_total_limit=4
+        save_total_limit=4,
+        run_name=pre_model
     )
 
 
 # %%
+
+def collect_wrong_eval(trainer: Trainer):
+    _, tokenized_test = prepare_dataset()
+    for it in enumerate(tokenized_test['train']):
+        trainer.model()
+        encoding = {k: v.to(trainer.model.device) for k, v in encoding.items()}
+
+
 def run_training(pre_model):
     global tokenizer
     tokenizer = AutoTokenizer.from_pretrained(pre_model)
@@ -84,16 +114,22 @@ def run_training(pre_model):
 
     trainer = Trainer(
         model=model,
-        args=get_training_args(),
+        args=get_training_args(pre_model),
         train_dataset=tokenized_train["train"],
         eval_dataset=tokenized_test["train"],
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
     )
+    trainer.model()
 
     trainer.train()
+    trainer.evaluate()
 
+    # collect_wrong_eval(trainer)
+
+
+# %%
 
 # %%
 # mBERT
