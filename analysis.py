@@ -2,11 +2,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
 #%%
 # Load data
 target = 'category'
-df = pd.read_csv('data/logs_05oct.csv')
+df = pd.read_csv('data/logs_25oct.csv')
 df.head(10)
 
 #%%
@@ -21,14 +20,14 @@ district_dist
 #%%
 # Plot distribution of districts
 plt.figure()
-sns.countplot(data=df, x='district', palette="viridis", order=district_dist.index)
+sns.countplot(data=df, x='district', hue='district', palette="viridis", order=district_dist.index, legend=False)
 plt.title('Distribution of Districts')
 plt.xlabel('Districts')
 plt.ylabel('Number of Texts')
 plt.xticks(ticks=range(len(district_dist)), labels=district_dist.keys(), rotation=45)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.savefig('distribution_districts.png')
+plt.savefig('img/distribution_districts.png')
 
 #%%
 # Distribution plot of the times the posts are posted
@@ -65,31 +64,23 @@ missing_values = df.isnull().sum()
 print(missing_values)
 
 #%%
-# Remove updatedOn because it only has null values
-df = df.drop(['updatedOn', 'hour'], axis='columns')
-
-#%%
-# Encode labels
-categories_list = df[target].unique()
-categories_dict = {category: index for index, category in enumerate(categories_list)}
-
-# Replace category values with encoded labels
-df[target] = df[target].map(categories_dict)
-df.head()
-
-#%%
 # Distribution of category
 category_dist = df[target].value_counts()
 category_dist
 
 #%%
+# Traffic category percentage
+traffic_occurrence = df[target].value_counts()['Trafikk']/df[target].shape[0]
+traffic_occurrence
+
+#%%
 # Plot distribution of categories
 plt.figure(figsize=(12,6))
-sns.countplot(data=df, x=target, palette="viridis", order=category_dist.index)
+sns.countplot(data=df, x=target, order=category_dist.index)
 plt.title('Distribution of Categories')
 plt.xlabel('Category (Encoded)')
 plt.ylabel('Number of Texts')
-plt.xticks(ticks=range(len(categories_dict)), labels=categories_dict.keys(), rotation=45)
+plt.xticks( rotation=45)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
 plt.savefig('img/distribution_categories.png')
@@ -114,8 +105,12 @@ plt.tight_layout()
 plt.savefig('img/distribution_textlength.png')
 
 #%%
-# Text stats yo
+# Text stats
 text_length_stats = df['text_length'].describe()
 text_length_stats
 
 
+#%%
+short_tweets = df[df['text_length'] < 50]
+pd.set_option('display.max_rows', None)
+short_tweets['text']
