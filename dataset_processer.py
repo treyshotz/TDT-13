@@ -28,3 +28,8 @@ from sklearn.model_selection import train_test_split
 df_train, df_test = train_test_split(df, test_size=.2)
 df_train.to_csv("output_enc_train.csv")
 df_test.to_csv("output_enc_test.csv")
+
+#%%
+
+small_df = df.head(20)
+small_df.to_csv("small.csv")

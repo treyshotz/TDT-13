@@ -3,10 +3,10 @@ import numpy as np
 import pandas as pd
 import torch
 from datasets import load_dataset
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+from sklearn.metrics import f1_score, roc_auc_score, accuracy_score
 from tensorflow.python.ops.numpy_ops import np_config
 from transformers import AutoModelForSequenceClassification, Trainer, AutoTokenizer, TrainingArguments, \
-    DataCollatorWithPadding
+    DataCollatorWithPadding, EvalPrediction
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 np_config.enable_numpy_behavior()
@@ -21,16 +21,18 @@ to_remove = [
     'createdOn',
     'updatedOn']
 
+training_file = "data/output_enc_train.csv"
+test_file = "data/small.csv"
 # %%
 
 df = pd.read_csv("data/logs_25oct.csv")
-df = df[['text', 'category']]
 labels = list(df['category'].unique())
 id2label = dict(zip(range(len(labels)), labels))
 label2id = dict(zip(labels, range(len(labels))))
 
 
 # %%
+
 def preprocess_function(examples):
     tokenized_text = tokenizer(examples["text"], truncation=True)
     labels_batch = examples['label']
@@ -46,28 +48,47 @@ def preprocess_function(examples):
 
 
 def prepare_dataset():
-    train_logdata = load_dataset("csv", data_files="data/output_enc_train.csv") \
+    train_logdata = load_dataset("csv", data_files=training_file) \
         .map(preprocess_function, batched=True) \
         .remove_columns(to_remove)
-    test_logdata = load_dataset("csv", data_files="data/output_enc_test.csv") \
+    test_logdata = load_dataset("csv", data_files=test_file) \
         .map(preprocess_function, batched=True) \
         .remove_columns(to_remove)
     return train_logdata, test_logdata
 
 
-def compute_metrics(pred):
-    labels = pred.label_ids
-    preds = pred.predictions.argmax(-1)
-    # argmax(pred.predictions, axis=1)
-    # pred.predictions.argmax(-1)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
-    acc = accuracy_score(labels, preds)
-    return {
-        'accuracy': acc,
-        'f1': f1,
-        'precision': precision,
-        'recall': recall
-    }
+def multi_label_metrics(predictions, labels, threshold=0.5):
+    # first, apply sigmoid on predictions which are of shape (batch_size, num_labels)
+    sigmoid = torch.nn.Sigmoid()
+    probs = sigmoid(torch.Tensor(predictions))
+    # next, use threshold to turn them into integer predictions
+    y_pred = np.zeros(probs.shape)
+    y_pred[np.where(probs >= threshold)] = 1
+    # finally, compute metrics
+    y_true = labels
+    f1_micro_average = f1_score(y_true=y_true, y_pred=y_pred, average='micro')
+    roc_auc = roc_auc_score(y_true, y_pred, average='micro')
+    accuracy = accuracy_score(y_true, y_pred)
+    # return as dictionary
+    metrics = {'f1': f1_micro_average,
+               'roc_auc': roc_auc,
+               'accuracy': accuracy}
+    return metrics
+
+
+def compute_metrics(p: EvalPrediction):
+    preds = p.predictions[0] if isinstance(p.predictions,
+                                           tuple) else p.predictions
+    global inc
+    inc = []
+    for pos, it in enumerate(p.predictions):
+        if p.predictions[pos].argmax() != p.label_ids[pos].argmax():
+            inc.append(pos)
+    df.iloc[inc].to_csv(f"incorrect_{curr_model.replace('/','')}.csv")
+    result = multi_label_metrics(
+        predictions=preds,
+        labels=p.label_ids)
+    return result
 
 
 # %%
@@ -79,8 +100,6 @@ def get_training_args(pre_model):
         per_device_train_batch_size=16,
         per_device_eval_batch_size=16,
         do_train=True,
-        warmup_steps=200,
-        fp16=True,
         num_train_epochs=2,
         weight_decay=0.01,
         evaluation_strategy="epoch",
@@ -93,14 +112,6 @@ def get_training_args(pre_model):
 
 
 # %%
-
-def collect_wrong_eval(trainer: Trainer):
-    _, tokenized_test = prepare_dataset()
-    for it in enumerate(tokenized_test['train']):
-        trainer.model()
-        encoding = {k: v.to(trainer.model.device) for k, v in encoding.items()}
-
-
 def run_training(pre_model):
     global tokenizer
     tokenizer = AutoTokenizer.from_pretrained(pre_model)
@@ -109,7 +120,8 @@ def run_training(pre_model):
     tokenized_train, tokenized_test = prepare_dataset()
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        pre_model, num_labels=14, id2label=id2label, label2id=label2id, trust_remote_code=True
+        pre_model, num_labels=14, id2label=id2label, label2id=label2id, trust_remote_code=True,
+        problem_type="multi_label_classification"
     ).to(device)
 
     trainer = Trainer(
@@ -121,15 +133,8 @@ def run_training(pre_model):
         data_collator=data_collator,
         compute_metrics=compute_metrics,
     )
-    trainer.model()
-
     trainer.train()
     trainer.evaluate()
-
-    # collect_wrong_eval(trainer)
-
-
-# %%
 
 # %%
 # mBERT
