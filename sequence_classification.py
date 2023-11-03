@@ -25,10 +25,11 @@ training_file = "data/output_enc_train.csv"
 test_file = "data/small.csv"
 # %%
 
-df = pd.read_csv("data/logs_25oct.csv")
-labels = list(df['category'].unique())
-id2label = dict(zip(range(len(labels)), labels))
-label2id = dict(zip(labels, range(len(labels))))
+label2id = {'Innbrudd': 0, 'Trafikk': 1, 'Brann': 2, 'Tyveri': 3, 'Ulykke': 4, 'Ro og orden': 5, 'Voldshendelse': 6,
+            'Andre hendelser': 7, 'Savnet': 8, 'Skadeverk': 9, 'Dyr': 10, 'Sjø': 11, 'Redning': 12, 'Arrangement': 13}
+id2label = {0: 'Innbrudd', 1: 'Trafikk', 2: 'Brann', 3: 'Tyveri', 4: 'Ulykke', 5: 'Ro og orden', 6: 'Voldshendelse',
+            7: 'Andre hendelser', 8: 'Savnet', 9: 'Skadeverk', 10: 'Dyr', 11: 'Sjø', 12: 'Redning', 13: 'Arrangement'}
+labels = list(label2id.keys())
 
 
 # %%
@@ -79,12 +80,16 @@ def multi_label_metrics(predictions, labels, threshold=0.5):
 def compute_metrics(p: EvalPrediction):
     preds = p.predictions[0] if isinstance(p.predictions,
                                            tuple) else p.predictions
-    global inc
     inc = []
+    pred = []
     for pos, it in enumerate(p.predictions):
         if p.predictions[pos].argmax() != p.label_ids[pos].argmax():
             inc.append(pos)
-    df.iloc[inc].to_csv(f"incorrect_{curr_model.replace('/','')}.csv")
+            pred.append(p.predictions[pos].argmax())
+
+    test_df = pd.read_csv(test_file)
+    test_df['predicted'] = pred
+    test_df.iloc[inc].to_csv(f"incorrect_{curr_model.replace('/', '')}.csv")
     result = multi_label_metrics(
         predictions=preds,
         labels=p.label_ids)
@@ -133,17 +138,18 @@ def run_training(pre_model):
         data_collator=data_collator,
         compute_metrics=compute_metrics,
     )
-    trainer.train()
+    # trainer.train()
     trainer.evaluate()
+
 
 # %%
 # mBERT
 curr_model = "bert-base-multilingual-cased"
 run_training(curr_model)
 
-# %%
-curr_model = "bert-base-cased"
-run_training(curr_model)
-# %%
-curr_model = "ltg/norbert3-base"
-run_training(curr_model)
+# # %%
+# curr_model = "bert-base-cased"
+# run_training(curr_model)
+# # %%
+# curr_model = "ltg/norbert3-base"
+# run_training(curr_model)
