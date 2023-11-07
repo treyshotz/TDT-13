@@ -22,6 +22,13 @@ df.groupby('category')['category'].count().plot(kind="bar", title="Plot")
 plt.show()
 
 #%%
+pd.read_csv("output_num_enc.csv").groupby('label')['label'].count().plot(kind="bar", title="Plot")
+plt.show()
+
+#%%
+pd.read_csv("data/output_enc_train.csv").groupby('label')['label'].count().plot(kind="bar", title="Plot")
+plt.show()
+#%%
 df.loc[df['category'] == 'Ulykke']
 
 #%%
