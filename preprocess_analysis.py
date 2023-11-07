@@ -18,6 +18,19 @@ district_dist = df['district'].value_counts()
 district_dist
 
 #%%
+df.groupby('category')['category'].count().plot(kind="bar", title="Plot")
+plt.show()
+
+#%%
+df.loc[df['category'] == 'Ulykke']
+
+#%%
+test_df = pd.read_csv("data/output_enc_concat_test.csv").groupby('label')['label'].count().plot(kind="bar", title="Plot")
+plt.show()
+#%%
+train_df = pd.read_csv("data/output_enc_concat_train.csv").groupby('label')['label'].count().plot(kind="bar", title="Plot")
+plt.show()
+#%%
 # Plot distribution of districts
 plt.figure()
 sns.countplot(data=df, x='district', hue='district', palette="viridis", order=district_dist.index, legend=False)

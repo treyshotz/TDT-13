@@ -5,11 +5,12 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics import classification_report, accuracy_score
 from nltk.corpus import stopwords
+import nltk
 from nltk.stem import SnowballStemmer
 import re
 from tabulate import tabulate
 
-
+nltk.download("stopwords")
 class NaiveBayesClassifier:
     def __init__(self, dataset_test, dataset_train, number_removal=True, apply_stemming=True, apply_stopwords=True, vectorization='count'):
         self.df_train = pd.read_csv(dataset_train)
@@ -65,6 +66,7 @@ class NaiveBayesClassifier:
 
         # Find the incorrect predictions
         incorrect_entries = [index for index, (true, pred) in enumerate(zip(y_test, y_pred)) if true != pred]
+        self.df_test.iloc[incorrect_entries].to_csv("incorrect_naive.csv")
         incorrect_texts = X_test.iloc[incorrect_entries].tolist()
         true_labels = y_test.iloc[incorrect_entries].tolist()
         pred_labels = [y_pred[index] for index in incorrect_entries]
