@@ -25,10 +25,10 @@ json_data = {
     'sortByEnum': 'Date',
     'sortByAsc': False,
     'timeSpanType': 'Custom',
-    'dateTimeFrom': '2022-01-01T00:00:00.000Z',
-    'dateTimeTo': '2023-10-25T10:35:42.123Z',
+    'dateTimeFrom': '2023-10-26T00:00:00.000Z',
+    'dateTimeTo': '2023-11-08T12:00:00.000Z',
     'skip': 0,
-    'take': 1000,
+    'take': max_take,
 }
 
 fields = ['parent_id', 'district', 'districtId', 'category', 'municipality', 'message_id', 'text', 'createdOn',
