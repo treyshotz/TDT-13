@@ -3,7 +3,7 @@ import pandas as pd
 #%%
 # Load data
 target = 'category'
-df = pd.read_csv('data/logs_25oct.csv')
+df = pd.read_csv('data/raw_data/logs_25oct.csv')
 
 #%%
 # Remove updatedOn because it only has null values

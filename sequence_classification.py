@@ -10,7 +10,6 @@ from transformers import AutoModelForSequenceClassification, Trainer, AutoTokeni
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 np_config.enable_numpy_behavior()
-accuracy = evaluate.load("accuracy")
 to_remove = [
     'text',
     'parent_id',
@@ -21,7 +20,7 @@ to_remove = [
     'createdOn',
     'updatedOn']
 
-training_file = "data/output_enc_train.csv"
+training_file = "data/small.csv"
 test_file = "data/small.csv"
 # %%
 
@@ -117,6 +116,19 @@ def get_training_args(pre_model):
 
 
 # %%
+from torch import nn
+
+class CustomTrainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False):
+        labels = inputs.pop("labels")
+        # forward pass
+        outputs = model(**inputs)
+        logits = outputs.get("logits")
+        # compute custom loss (suppose one has 3 labels with different weights)
+        loss_fct = nn.CrossEntropyLoss(weight=torch.tensor([3.0, 1.0, 2.0, 3.0, 3.0, 2.0, 3.0, 3.0, 5.0, 5.0, 5.0, 5.0, 4.0, 7.0], device=model.device))
+        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
+        return (loss, outputs) if return_outputs else loss
+
 def run_training(pre_model):
     global tokenizer
     tokenizer = AutoTokenizer.from_pretrained(pre_model)
@@ -137,10 +149,11 @@ def run_training(pre_model):
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
-    )
-    # trainer.train()
-    trainer.evaluate()
 
+    )
+    trainer.train()
+    trainer.evaluate()
+    trainer.model.save_pretrained(pre_model)
 
 # %%
 # mBERT

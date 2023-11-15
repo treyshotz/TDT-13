@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv("data/logs_25oct.csv")
+df = pd.read_csv("data/raw_data/logs_25oct.csv")
 
 # %%
 # rename column
@@ -47,7 +47,7 @@ df = df.groupby('parent_id').agg({
 df.to_csv("output_concat.csv")
 
 # %%
-
+# Split the pre processed data into train and test
 from sklearn.model_selection import train_test_split
 
 df_train, df_test = train_test_split(df, test_size=.2)
