@@ -1,5 +1,4 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
@@ -10,7 +9,37 @@ from nltk.stem import SnowballStemmer
 import re
 from tabulate import tabulate
 
+# %%
 nltk.download("stopwords")
+
+# %% Global settings
+
+number_removal = True
+apply_stemming = True
+apply_stopwords = True
+vectorization = 'count'
+
+# %% Load data
+df_train = pd.read_csv('data/output_enc_concat_train.csv')
+df_test = pd.read_csv('data/output_enc_concat_test.csv')
+
+# %% Stop words and stemming
+stopwords = list(stopwords.words('norwegian')) if apply_stopwords else None
+stemmer = SnowballStemmer("norwegian")
+
+# %% Pre-processing
+df_train['text'] = df_train['text'].str.lower()
+df_test['text'] = df_test['text'].str.lower()
+
+if number_removal:
+    df_train['text'] = df_train['text'].apply(lambda x: re.sub(r'\d+', '', x))
+    df_test['text'] = df_test['text'].apply(lambda x: re.sub(r'\d+', '', x))
+
+if apply_stemming:
+    df_train['text'] = df_train['text'].apply(lambda x: ' '.join([stemmer.stem(token) for token in x.split()]))
+    df_test['text'] = df_test['text'].apply(lambda x: ' '.join([stemmer.stem(token) for token in x.split()]))
+
+
 class NaiveBayesClassifier:
     def __init__(self, dataset_test, dataset_train, number_removal=True, apply_stemming=True, apply_stopwords=True, vectorization='count'):
         self.df_train = pd.read_csv(dataset_train)
@@ -111,25 +140,4 @@ if __name__ == '__main__':
     classifier = NaiveBayesClassifier('data/output_enc_concat_test.csv', 'data/output_enc_concat_train.csv', number_removal=True, apply_stemming=True,
                                       apply_stopwords=True, vectorization='count')
     classifier.main()
-    """
-    classifier = NaiveBayesClassifier('data/output_concat.csv', number_removal=False, apply_stemming=True,
-                                      apply_stopwords=True, vectorization='count')
-    classifier.main()
-    classifier = NaiveBayesClassifier('data/output_concat.csv', number_removal=True, apply_stemming=False,
-                                      apply_stopwords=False, vectorization='count')
-    classifier.main()
-    classifier = NaiveBayesClassifier('data/output_concat.csv', number_removal=True, apply_stemming=True,
-                                      apply_stopwords=True, vectorization='tf_idf')
-    classifier.main()
-    classifier = NaiveBayesClassifier('data/output_concat.csv', number_removal=False, apply_stemming=True,
-                                      apply_stopwords=True, vectorization='tf_idf')
-    classifier.main()
-    classifier = NaiveBayesClassifier('data/output_concat.csv', number_removal=True, apply_stemming=False,
-                                      apply_stopwords=False, vectorization='tf_idf')
-    classifier.main()
 
-
-    classifier = NaiveBayesClassifier('data/logs_25oct.csv', number_removal=True, apply_stemming=True,
-                                      apply_stopwords=True, vectorization='count')
-    classifier.main()
-    """
