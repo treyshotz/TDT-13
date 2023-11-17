@@ -66,7 +66,6 @@ def fetch_data():
 
 data_dict = fetch_data()
 
-
 with open(f"logs{json_data.get('dateTimeTo')}.csv", 'w', newline='', encoding='utf-8-sig') as file:
     writer = csv.DictWriter(file, fieldnames=fields)
     writer.writeheader()

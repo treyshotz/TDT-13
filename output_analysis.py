@@ -79,12 +79,12 @@ for i, r in berts.iterrows():
 
 m3 = pd.merge(berts, naive_pd, how="inner", on=["message_id"])
 
-    # %%
-#Find a specific message in test dataset and raw dataset
+# %%
+# Find a specific message in test dataset and raw dataset
 ut = test_pd.loc[test_pd['message_id'] == "23rk6w-0"]
 ut2 = raw_pd.loc[raw_pd['message_id'] == "23rk6w-0"]
 
-#%%
-#Check where all the BERT's predict differently
-res = berts.loc[berts['NorBERT_pred'] != berts['mBERT_pred']].loc[berts['NorBERT_pred'] != berts['BERT_pred']].loc[berts['BERT_pred'] != berts['mBERT_pred']]
-
+# %%
+# Check where all the BERT's predict differently
+res = berts.loc[berts['NorBERT_pred'] != berts['mBERT_pred']].loc[berts['NorBERT_pred'] != berts['BERT_pred']].loc[
+    berts['BERT_pred'] != berts['mBERT_pred']]
